@@ -1,0 +1,31 @@
+name: download Veracrpt
+
+# 计划每周二0点执行
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "00 0 * * 2"
+
+jobs:
+  # 下载VC
+  build:
+    permissions:
+        contents: write
+    runs-on: ubuntu-20.04
+    steps:
+      # 下载VC
+      - name: Download linux Veracrpt
+        run: |
+          echo "VC_Newv=`curl -L -k --retry 3 --retry-delay 3 --retry-max-time 10 "https://www.veracrypt.fr/en/Downloads.html" |grep setup.tar.bz2 |head -n 1 |awk -F 'veracrypt-' '{print $2}' | awk -F '-setup' '{print $1}'`" >> "$GITHUB_ENV"
+          wget -U "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0" --no-check-certificate -c https://launchpad.net/veracrypt/trunk/"${{ env.VC_Newv }}"/+download/veracrypt-"${{ env.VC_Newv }}"-setup.tar.bz2 --directory-prefix="./"
+          mkdir release && cp veracrypt-*.tar.bz2 ./release
+
+      # 发布release
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: release/*
+          tag: veracrypt_${{ env.VC_Newv }}
+          overwrite: true
+          file_glob: true
